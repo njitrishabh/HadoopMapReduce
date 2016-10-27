@@ -5,7 +5,7 @@ A Hadoop application that takes as input the 50 Wikipedia web pages dedicated to
 
 a) How many times each of the words “education”, “politics”, “sports”, and “agriculture” appear in the files. 
 
-b) Rank the top 3 states for each of these words (i.e., which state pages use each of these words the most)
+b) Rank all the 50 states for each of these words (i.e., which state pages use each of these words the most)
 
 
 1. Compile java source files by giving the following command
