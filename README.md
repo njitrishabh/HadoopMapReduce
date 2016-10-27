@@ -1,11 +1,17 @@
 # HadoopMapReduce
-Program to find word count of specific words and rank web pages based on the count
 
-A Hadoop application that takes as input the 50 Wikipedia web pages dedicated to the US states and outputs: 
+Goal: The purpose of this assignment is to learn how to use the Amazon Web Services (AWS) platform and to learn how to develop parallel applications using the Hadoop programming framework.
 
-a) How many times each of the words “education”, “politics”, “sports”, and “agriculture” appear in the files. 
+Description: The assignment is divided in 2 tasks:
+
+1. Build your own Hadoop AMI, starting from a basic Ubuntu AMI and store this AMI in S3.
+
+2. Write a Hadoop/Yarn MapReduce application that takes as input the 50 Wikipedia web pages dedicated to the US states (we will provide these files for consistency) and:
+
+a) Computes how many times the words “education”, “politics”, “sports”, and “agriculture” appear in each file.
 
 b) Rank all the 50 states for each of these words (i.e., which state pages use each of these words the most)
+
 
 
 1. Compile java source files by giving the following command
