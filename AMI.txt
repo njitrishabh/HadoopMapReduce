@@ -1,0 +1,477 @@
+﻿
+
+Step by step description of how to built your AMI:
+
+
+1. Setting up Amazon EC2 Instances
+        
+1.1   Get Amazon AWS account
+If you do not already have an account, please create a new one. Amazon EC2 comes with eligible free-tier instances.
+
+
+1.2   Launch Instance
+Once you have signed up for Amazon account. Login to Amazon Web Services, click on My Account and navigate to Amazon EC2 Console.
+
+
+1.3   Select AMI
+Select Ubuntu Server 14.04 LTS (HVM), Server 64-bit OS.
+
+
+1.4   Select Instance Type
+Select the micro instance.
+
+
+1.5   Configure Number of Instances
+As mentioned we are setting up 4 node hadoop cluster, so please enter 4 as number of instances. Please check Amazon EC2 free-tier requirements, you may setup 3 node cluster with < 30GB storage size to avoid any charges.
+
+
+1.6   Add Storage
+Minimum volume size is 8GB.
+
+
+1.7   Instance Description
+Give your instance name and description.
+
+
+1.8   Define a Security Group
+Create a new security group, later on we are going to modify the security group with security rules.
+
+
+1.9   Launch Instance and Create Security Pair
+Review and launch instance.
+
+
+Amazon EC2 uses public–key cryptography to encrypt and decrypt login information. Public–key cryptography uses a public key to encrypt a piece of data, such as a password, then the recipient uses the private key to decrypt the data. The public and private keys are known as a key pair.
+
+
+Create a new keypair and give it a name “hadoopjk” and download the keypair (.pem) file to your local machine. Click Launch Instance
+
+
+
+
+1.10   Launching Instances
+Once you click “Launch Instance” 4 instance should be launched with “pending” state.
+
+
+Once in “running” state we are now going to rename the instance name as below.
+
+
+hadoopjk249   (Master)      (Name node)
+hadoopjk250   (Slave 1)    (data node will reside here)
+hadoopjk252   (Slave 2)  (data node will reside here)
+hadoopjk251   (Slave 3)  (data node will reside here)
+
+
+please note down the Instance ID, Public DNS/URL (ec2-54-201-173-164.us-west-2.compute.amazonaws.com)  and Public IP for each instance for your reference.. We will need it later on to connect from Putty client.  Also notice we are using “HadoopEC2SecurityGroup”.
+
+
+You can use the existing group or create a new one. When you create a group with default options it add a rule for SSH at port 22.In order to have TCP and ICMP access we need to add 2 additional security rules. Add ‘All TCP’, ‘All ICMP’ and ‘SSH (22)’ under the inbound rules to “HadoopEC2SecurityGroup”. This will allow ping, SSH, and other similar commands among servers and from any other machine on internet. Make sure to “Apply Rule changes” to save your changes.
+
+
+These protocols and ports are also required to enable communication among cluster servers. As this is a test setup we are allowing access to all for TCP, ICMP and SSH and not bothering about the details of individual server port and security.
+
+
+
+
+1. Setting up client access to Amazon Instances
+
+
+Now, lets make sure we can connect to all 4 instances.For that we are going to use Putty client We are going setup password-less SSH access among servers to setup the cluster. This allows remote access from Master Server to Slave Servers so Master Server can remotely start the Data Node and Task Tracker services on Slave servers.
+
+
+We are going to use downloaded hadoopec2cluster.pem file to generate the private key (.ppk). In order to generate the private key we need Puttygen client. You can download the putty and puttygen and various utilities in zip from http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html.
+
+
+2.1   Generating Private Key
+Let’s launch PUTTYGEN client and import the key pair we created during launch instance step – “hadoopjk.pem”
+
+
+Navigate to Conversions and “Import Key”
+
+
+Once you import the key You can enter passphrase to protect your private key or leave the passphrase fields blank to use the private key without any passphrase. Passphrase protects the private key from any unauthorized access to servers using your machine and your private key.
+
+
+Any access to server using passphrase protected private key will require the user to enter the passphrase to enable the private key enabled access to AWS EC2 server.
+
+
+
+
+2.2   Save Private Key
+Now save the private key by clicking on “Save Private Key” and click “Yes” as  we are going to leave passphrase empty.
+
+
+Save the .ppk file and give it a meaningful name.
+Now we are ready to connect to our Amazon Instance Machine for the first time.
+
+
+2.3   Connect to Amazon Instance
+Let’s connect to HadoopNameNode first. Launch Putty client, grab the public URL , import the .ppk private key that we just created for password-less SSH access. As per amazon documentation, for Ubuntu machines username is “ubuntu”.
+
+
+2.3.1   Provide private key for authentication
+
+
+2.3.2   Provide Hostname and Port and Connection Type
+
+
+Click “Open” to launch putty session. When you launch the session first time, you will see below message, click “Yes” and will prompt you for the username, enter ubuntu, if everything goes well you will be presented welcome message with Unix shell at the end.
+
+
+Similarly connect to remaining 3 machines HadoopSecondaryNameNode, HaddopSlave1,HadoopSlave2 respectively to make sure you can connect successfully.
+
+
+2.4   Enable Public Access
+Issue ifconfig command and note down the ip address. Next, we are going to update the hostname with ec2 public URL and finally we are going to update /etc/hosts file to map  the ec2 public URL with ip address. This will help us to configure master ans slaves nodes with hostname instead of ip address.
+
+
+Issue the hostname command, it will display the ip address same as inet address from ifconfig command.
+We need to modify the hostname to ec2 public URL with below command
+
+
+$ sudo hostname ec2.us-west-2.compute.amazonaws.com
+
+
+2.5   Modify /etc/hosts
+Let’s change the host to EC2 public IP and hostname.
+Open the /etc/hosts in vi, in a very first line it will show 127.0.0.1 localhost, we need to replace that with amazon ec2 hostname and ip address we just collected. Modify the file and save your changes.
+Repeat 2.3 and 2.4 sections for remaining 3 machines.
+
+
+
+
+1. Setup WinSCP access to EC2 instances
+
+
+        In order to securely transfer files from your windows machine to Amazon EC2 WinSCP is a handy utility.
+Provide hostname, username and private key file and save your configuration and Login.
+
+
+If you see an error, just ignore and you upon successful login you will see unix file system of a logged in user /home/ubuntu your Amazon EC2 Ubuntu machine.
+
+
+Upload the .pem file to master machine (HadoopNameNode). It will be used while connecting to slave nodes during hadoop startup daemons.
+1. Apache Hadoop Installation and Cluster Setup
+
+
+        4.1   Update the packages and dependencies.
+        Let’s update the packages, start with master, repeat this for SNN and 2 slaves.
+
+
+$ sudo apt-get update
+
+
+Once its complete, let’s install java
+
+
+4.2   Install Java
+Add following PPA and install the latest Oracle Java (JDK) 7 in Ubuntu
+
+
+$ sudo add-apt-repository ppa:webupd8team/java
+
+
+$ sudo apt-get update && sudo apt-get install oracle-jdk7-installer
+
+
+Check if Ubuntu uses JDK 7
+
+
+Repeat this for SNN and 2 slaves.
+
+
+4.3   Download Hadoop
+We are going to use haddop 1.2.1 stable version from apache download page and here is the 1.2.1 mirror
+
+
+issue wget command from shell
+
+
+$ wget http://apache.mirror.gtcomm.net/hadoop/common/hadoop-1.2.1/hadoop-1.2.1.tar.gz
+
+
+Unzip the files and review the package content and configuration files.
+
+
+$ tar -xzvf hadoop-1.2.1.tar.gz
+
+
+For simplicity, rename the ‘hadoop-1.2.1’ directory to ‘hadoop’ for ease of operation and maintenance.
+
+
+$ mv hadoop-1.2.1 hadoop
+
+
+4.4    Setup Environment Variable
+Setup Environment Variable for ‘ubuntu’ user
+
+
+Update the .bashrc file to add important Hadoop paths and directories.
+
+
+Navigate to home directory
+
+
+$cd
+
+
+Open .bashrc file in vi edito
+
+
+$ vi .bashrc
+
+
+Add following at the end of file
+
+
+export HADOOP_CONF=/home/ubuntu/hadoop/conf
+
+
+export HADOOP_PREFIX=/home/ubuntu/hadoop
+
+
+#Set JAVA_HOME
+
+
+export JAVA_HOME=/usr/lib/jvm/java-7-oracle
+
+
+# Add Hadoop bin/ directory to path
+export PATH=$PATH:$HADOOP_PREFIX/bin
+
+
+Save and Exit.
+
+
+To check whether its been updated correctly or not, reload bash profile, use following commands
+
+
+source ~/.bashrc
+echo $HADOOP_PREFIX
+echo $HADOOP_CONF
+Repeat 1.3 and 1.4  for remaining 3 machines (SNN and 2 slaves).
+
+
+4.5   Setup Password-less SSH on Servers
+Master server remotely starts services on salve nodes, whichrequires password-less access to Slave Servers. AWS Ubuntu server comes with pre-installed OpenSSh server.
+
+
+Quick Note:
+The public part of the key loaded into the agent must be put on the target system in ~/.ssh/authorized_keys. This has been taken care of by the AWS Server creation process
+Now we need to add the AWS EC2 Key Pair identity haddopec2cluster.pem to SSH profile. In order to do that we will need to use following ssh utilities
+
+
+‘ssh-agent’ is a background program that handles passwords for SSH private keys.
+‘ssh-add’ command prompts the user for a private key password and adds it to the list maintained by ssh-agent. Once you add a password to ssh-agent, you will not be asked to provide the key when using SSH or SCP to connect to hosts with your public key.
+
+
+Amazon EC2 Instance  has already taken care of ‘authorized_keys’ on master server, execute following commands to allow password-less SSH access to slave servers.
+
+
+First of all we need to protect our keypair files, if the file permissions are too open (see below) you will get an error.
+
+
+To fix this problem, we need to issue following commands
+
+
+$ chmod 644 authorized_keys
+
+
+
+
+To use ssh-agent and ssh-add, follow the steps below:
+
+
+1. At the Unix prompt, enter: eval `ssh-agent`Note: Make sure you use the backquote ( ` ), located under the tilde ( ~ ), rather than the single quote ( ' ).
+2. Enter the command: ssh-add hadoopec2cluster.pem
+if you notice .pem file has “read-only” permission now and this time it works for us.
+
+
+Keep in mind ssh session will be lost upon shell exit and you have repeat ssh-agent and ssh-add commands.
+
+
+4.6   Remote SSH
+Let’s verify that we can connect into SNN and slave nodes from master
+
+
+$ ssh ubuntu@<your-amazon-ec2-public URL>
+On successful login the IP address on the shell will change.
+
+
+
+
+4.7   Hadoop Cluster Setup
+This section will cover the hadoop cluster configuration.  We will have to modify
+
+
+* hadoop-env.sh – This file contains some environment variable settings used by Hadoop. You can use these to affect some aspects of Hadoop daemon behavior, such as where log files are stored, the maximum amount of heap used etc. The only variable you should need to change at this point is in this file is JAVA_HOME, which specifies the path to the Java 1.7.x installation used by Hadoop.
+* core-site.xml –  key property fs.default.name – for namenode configuration for e.g hdfs://namenode/
+* hdfs-site.xml – key property – dfs.replication – by default 3
+* mapred-site.xml  – key property  mapred.job.tracker for jobtracker configuration for e.g jobtracker:8021
+
+
+We will first start with master (NameNode) and then copy above xml changes to remaining 3 nodes (SNN and slaves)
+
+
+Finally, in section 1.6.2 we will have to configure conf/masters and conf/slaves.
+
+
+* masters – defines on which machines Hadoop will start secondary NameNodes in our multi-node cluster.
+* slaves –  defines the lists of hosts, one per line, where the Hadoop slave daemons (datanodes and tasktrackers) will run.
+
+
+        Lets go over one by one. Start with masters (namenode).
+
+
+* hadoop-env.sh
+                vi $HADOOP_CONF/hadoop-env.sh  and add JAVA_HOME and save changes.
+                
+* core-site.xml
+This file contains configuration settings for Hadoop Core (for e.g I/O) that are common to HDFS and MapReduce Default file system configuration property – fs.default.name  goes here it could for e.g hdfs / s3 which will be used by clients.
+
+
+$ vi $HADOOP_CONF/core-site.xml
+
+
+We are going to add two properties
+
+
+* fs.default.name -   will point to NameNode URL and port (usually 8020)
+* hadoop.tmp.dir  – A base for other temporary directories. Its important to note that every node needs hadoop tmp directory.  I am going to create a new directory “hdfstmp”  as below in all 4 nodes. Ideally you can write a shell script to do this for you, but for now going the manual way.
+
+
+$ cd
+
+
+$ mkdir hdfstmp
+
+
+* hdfs-site.xml
+This file contains the configuration for HDFS daemons, the NameNode, SecondaryNameNode  and data nodes.
+
+
+We are going to add 2 properties
+
+
+* dfs.permissions.enabled  with value false,  This means that any user, not just the “hdfs” user, can do anything they want to HDFS so do not do this in production unless you have a very good reason. if “true”, enable permission checking in HDFS. If “false”, permission checking is turned off, but all other behavior is unchanged. Switching from one parameter value to the other does not change the mode, owner or group of files or directories. Be very careful before you set this
+
+
+* dfs.replication  – Default block replication is 3. The actual number of replications can be specified when the file is created. The default is used if replication is not specified in create time. Since we have 2 slave nodes we will set this value to 2.
+
+
+<configuration>
+<property>
+<name>dfs.replication</name>
+<value>2</value>
+</property>
+<property>
+<name>dfs.permissions</name>
+<value>false</value>
+</property>
+</configuration>
+
+
+
+
+* mapred-site.xml
+This file contains the configuration settings for MapReduce daemons; the job tracker and the task-trackers.
+
+
+The mapred.job.tracker parameter is a hostname (or IP address) and port pair on which the Job Tracker listens for RPC communication. This parameter specify the location of the Job Tracker for Task Trackers and MapReduce clients.
+
+
+JobTracker will be running on master (NameNode)
+
+
+
+
+
+
+<configuration>
+<property>
+<name>mapred.job.tracker</name>
+<value>hdfs://ec2-.compute-1.amazonaws.com:8021</value>
+</property>
+</configuration>
+
+
+4.7.1   Move configuration files to Slaves
+Now, we are done with hadoop xml files configuration master, lets copy the files to remaining 3 nodes using secure copy (scp).
+
+
+Start with SNN, if you are starting a new session, follow ssh-add as per section 1.5
+
+
+From master’s unix shell issue below command
+
+
+$ scp hadoop-env.sh core-site.xml hdfs-site.xml mapred-site.xml ubuntu@ec2-54-209-221-47.compute-1.amazonaws.com:/home/ubuntu/hadoop/conf
+
+
+Repeat this for slave nodes.
+
+
+4.7.2   Configure Master and Slaves
+Every hadoop distribution comes with master and slaves files. By default it contains one entry for localhost, we have to modify these 2 files on both “masters” (HadoopNameNode) and “slaves” (HadoopSlave1 and HadoopSlave2) machines – we have a dedicated machine for HadoopSecondaryNameNode.
+
+
+4.7.3   Modify masters file on Master machine
+conf/masters file defines on which machines Hadoop will start Secondary NameNodes in our multi-node cluster. In our case, there will be two machines HadoopNameNode and HadoopSecondaryNameNode.
+
+
+$ vi $HADOOP_CONF/masters and provide an entry for the hostename where you want to run SecondaryNameNode daemon. In our case HadoopNameNode and HadoopSecondaryNameNode
+
+
+4.7.4   Modify the slaves file on master machine
+The slaves file is used for starting DataNodes and TaskTrackers
+
+
+$ vi $HADOOP_CONF/slaves
+
+
+4.7.5   Copy masters and slaves to SecondaryNameNode
+Since SecondayNameNode configuration will be same as NameNode, we need to copy master and slaves to HadoopSecondaryNameNode.
+
+
+4.7.6   Configure master and slaves on “Slaves” node
+Since we are configuring slaves (HadoopSlave1 & HadoopSlave2) , masters file on slave machine is going to be empty.
+
+
+$ vi $HADOOP_CONF/masters
+
+
+Next, update the ‘slaves’ file on Slave server (HadoopSlave1) with the IP address of the slave node. Notice that the ‘slaves’ file at Slave node contains only its own IP address and not of any other Data Node in the cluster.
+
+
+$ vi $HADOOP_CONF/slaves
+
+
+Similarly update masters and slaves for HadoopSlave2.
+
+
+4.8   Hadoop Daemon Startup
+
+
+The first step to starting up your Hadoop installation is formatting the Hadoop filesystem which runs on top of your , which is implemented on top of the local filesystems of your cluster. You need to do this the first time you set up a Hadoop installation. Do not format a running Hadoop filesystem, this will cause all your data to be erased.
+
+
+To format the namenode
+
+
+$ hadoop namenode -format
+
+
+Lets start all hadoop daemons from HadoopNameNode
+
+
+$ cd $HADOOP_CONF
+
+
+$ start-all.sh
+This will start
+
+
+* NameNode,JobTracker and SecondaryNameNode daemons on HadoopNameNode.
+* SecondaryNameNode daemons on HadoopSecondaryNameNode.
+* and DataNode and TaskTracker daemons on slave nodes HadoopSlave1 and HadoopSlave2.
+
