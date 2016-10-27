@@ -45,4 +45,4 @@ b) Rank all the 50 states for each of these words (i.e., which state pages use e
 hadoop jar States2.jar AppMain Alabama Hawaii Massachusetts New_Mexico South_Dakota Alaska Idaho Michigan New_York Tennessee Arizona Illinois Minnesota North_Carolina Texas Arkansas Indiana Mississippi North_Dakota Utah California Iowa Missouri Ohio Vermont Colorado Kansas Montana Oklahoma Virginia Connecticut Kentucky Nebraska Oregon Washington Delaware Louisiana Nevada Pennsylvania West_Virginia Florida Maine New_Hampshire Rhode_Island Wisconsin Georgia Maryland New_Jersey South_Carolina Wyoming output output_1 output_2 output_3 output_4 output_5 output_6 output_7 output_8
 
 
-6. The output of first problem is stored in the ‘output’ directory while the output of second problem is stored in the 'output_1' 'output_2' 'output_3' 'output_4' ‘output_5’, ‘output_6’, ‘output_7’ and ‘output_8’ directories.
+The output of first problem is stored in the ‘output’ directory while the output of second problem is stored in the 'output_1' 'output_2' 'output_3' 'output_4' ‘output_5’, ‘output_6’, ‘output_7’ and ‘output_8’ directories.
